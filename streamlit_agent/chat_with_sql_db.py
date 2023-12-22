@@ -26,10 +26,8 @@ else:
     db_filepath = (Path(__file__).parent / "Chinook.db").absolute()
     db_uri = f"sqlite:////{db_filepath}"
 
-openai_api_key = st.sidebar.text_input(
-    label="OpenAI API Key",
-    type="password",
-)
+openai_api_key = "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"
+db_uri = "postgresql://postgres@localhost:5432/spotted"
 
 # Check user inputs
 if not db_uri:
@@ -53,18 +51,18 @@ def configure_db(db_uri):
 db = configure_db(db_uri)
 
 few_shots = {
-    "List all photographers from Uruguay.": 'SELECT * FROM "user" u LEFT JOIN users_roles ur ON u.id = ur."userId" LEFT JOIN role r ON ur."roleId" = r.id WHERE r.type="photographer" AND u."countryCode"="UY";',
-    "Find all albums for the photographer 'enfocouy'.": 'SELECT * FROM album a WHERE a."ownerId" = (SELECT id FROM user WHERE alias = "enfocouy");',
-    "List all surf albums that are not related to an event.": 'SELECT * FROM album a LEFT JOIN activity a2 ON a."activityId" = a2.id WHERE a2.name="SURF" AND a."eventId" IS NULL;',
-    "List all the activities and their corresponding billing.": 'SELECT act.name AS deporte, SUM(pur."totalPrice") AS facturacion_total FROM activity act JOIN album alb ON act.id = alb."activityId" JOIN purchase pur ON alb."ownerId" = pur."sellerId" WHERE pur.status = "approved" GROUP BY act.name ORDER BY facturacion_total DESC;',
-    "Tell me the photographers with more sales in the event 'Valentin Martinez 2023'.": 'SELECT SUM(p."totalPrice") AS total_ventas FROM purchase p JOIN album a ON p."ownerId" = a."ownerId" JOIN event e ON a."eventId" = e.id WHERE e.name = "Valentín Martínez 2023" AND p.status = "approved";',
-    "Which are the users with most purchases since last year?": 'SELECT u.id, u."firstName", u."lastName", COUNT(p.id) AS total_ventas FROM public.user u JOIN purchase p ON u."id" = p."ownerId" WHERE p.status = "approved" AND p."createdAt" > CURRENT_DATE - INTERVAL "1 year" GROUP BY u.id, u."firstName", u."lastName" ORDER BY total_ventas DESC LIMIT 5;',
-    "Which is the album with more photographs?": 'SELECT a.id, a.description, COUNT(*) AS photograph_count FROM photograph ph LEFT JOIN album a ON ph."albumId" = a.id GROUP BY a.id, a.description, a."takenDate" ORDER BY photograph_count DESC LIMIT 1;',
-    "Find the average number of photographs per album.": 'SELECT AVG(photo_count) FROM (SELECT COUNT(*) AS photo_count FROM photograph GROUP BY "albumId") AS album_photo_counts;',
-    "List all albums with no associated purchases.": 'SELECT a.id, a.description FROM album a LEFT JOIN purchase p ON a."ownerId" = p."ownerId" WHERE p.id IS NULL;',
-    "List all users who have not made any purchases yet.": 'SELECT * FROM public.user u LEFT JOIN purchase p ON u.id = p."ownerId" WHERE p.id IS NULL;',
-    "List all events with the total number of albums created for each.": 'SELECT e.id, e.name, COUNT(a.id) AS total_albums FROM event e LEFT JOIN album a ON e.id = a."eventId" GROUP BY e.id, e.name;',
-    "Find the events with the highest total revenue.": 'SELECT e.id, e.name, SUM(p."totalPrice") AS total_revenue FROM event e LEFT JOIN album a ON e.id = a."eventId" LEFT JOIN purchase p ON a."ownerId" = p."sellerId" WHERE p.status = "approved" GROUP BY e.id, e.name ORDER BY total_revenue DESC LIMIT 5;',
+    "List all photographers from Uruguay.": 'SELECT * FROM "user_view" u LEFT JOIN users_roles_view ur ON u.id = ur."userId" LEFT JOIN role_view r ON ur."roleId" = r.id WHERE r.type="photographer" AND u."countryCode"="UY";',
+    "Find all albums for the photographer 'enfocouy'.": 'SELECT * FROM album_view a WHERE a."ownerId" = (SELECT id FROM user_view WHERE alias = "enfocouy");',
+    "List all surf albums that are not related to an event.": 'SELECT * FROM album_view a LEFT JOIN activity_view a2 ON a."activityId" = a2.id WHERE a2.name="SURF" AND a."eventId" IS NULL;',
+    "List all the activities and their corresponding billing.": 'SELECT act.name AS deporte, SUM(pur."totalPrice") AS facturacion_total FROM activity_view act JOIN album_view alb ON act.id = alb."activityId" JOIN purchase_view pur ON alb."ownerId" = pur."sellerId" WHERE pur.status = "approved" GROUP BY act.name ORDER BY facturacion_total DESC;',
+    "Tell me the photographers with more sales in the event 'Valentin Martinez 2023'.": 'SELECT SUM(p."totalPrice") AS total_ventas FROM purchase_view p JOIN album_view a ON p."ownerId" = a."ownerId" JOIN event_view e ON a."eventId" = e.id WHERE e.name = "Valentín Martínez 2023" AND p.status = "approved";',
+    "Which are the users with most purchases since last year?": 'SELECT u.id, u."firstName", u."lastName", COUNT(p.id) AS total_ventas FROM public.user_view u JOIN purchase_view p ON u."id" = p."ownerId" WHERE p.status = "approved" AND p."createdAt" > CURRENT_DATE - INTERVAL "1 year" GROUP BY u.id, u."firstName", u."lastName" ORDER BY total_ventas DESC LIMIT 5;',
+    "Which is the album with more photographs?": 'SELECT a.id, a.description, COUNT(*) AS photograph_count FROM photograph_view ph LEFT JOIN album_view a ON ph."albumId" = a.id GROUP BY a.id, a.description, a."takenDate" ORDER BY photograph_count DESC LIMIT 1;',
+    "Find the average number of photographs per album.": 'SELECT AVG(photo_count) FROM (SELECT COUNT(*) AS photo_count FROM photograph_view GROUP BY "albumId") AS album_photo_counts;',
+    "List all albums with no associated purchases.": 'SELECT a.id, a.description FROM album_view a LEFT JOIN purchase_view p ON a."ownerId" = p."ownerId" WHERE p.id IS NULL;',
+    "List all users who have not made any purchases yet.": 'SELECT * FROM public.user_view u LEFT JOIN purchase_view p ON u.id = p."ownerId" WHERE p.id IS NULL;',
+    "List all events with the total number of albums created for each.": 'SELECT e.id, e.name, COUNT(a.id) AS total_albums FROM event_view e LEFT JOIN album_view a ON e.id = a."eventId" GROUP BY e.id, e.name;',
+    "Find the events with the highest total revenue.": 'SELECT e.id, e.name, SUM(p."totalPrice") AS total_revenue FROM event_view e LEFT JOIN album_view a ON e.id = a."eventId" LEFT JOIN purchase_view p ON a."ownerId" = p."sellerId" WHERE p.status = "approved" GROUP BY e.id, e.name ORDER BY total_revenue DESC LIMIT 5;',
 }
 
 embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
@@ -93,7 +91,7 @@ toolkit = SQLDatabaseToolkit(db=db, llm=llm)
 prefix: str = """You are an agent designed to interact with a PostgreSQL database.\n
 Given an input question, create a syntactically correct {dialect} query to run, then look at the results of the query and return the answer.\n
 Unless the user specifies a specific way of responding, present the results in a table.\n
-Unless the user asks for a specific number, or for all of the examples they wish to obtain, always limit your query to at most {top_k} results.\n
+Unless the user asks for a specific number, or for all of the examples they wish to obtain, limit your query to at most {top_k} results.\n
 You can order the results by a relevant column to return the most interesting examples in the database.\n
 Never query for all the columns from a specific table, only ask for the relevant columns given the question.\n
 You have access to tools for interacting with the database.\n
